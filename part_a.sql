@@ -134,7 +134,7 @@ WITH behind_as_half AS (
         away_team_id,
         CASE
             WHEN away_goals > home_goals THEN 3
-            WHEN away_goals > home_goals THEN 3
+            WHEN away_goals = home_goals THEN 1
             ELSE 0
         END 
     FROM matches
@@ -143,14 +143,17 @@ WITH behind_as_half AS (
         ),
 assigned AS (
     SELECT
-        *,
+        b.match_id,
+        b.kickoff_ts,
+        b.team_id,
+        b.points,
         ms.manager_name,
-        ROW_NUMBER () OVER ( b.match_id, b.team_id ORDER BY ms.start_date DESC, ms.spell_id DESC
+        ROW_NUMBER () OVER ( PARTITION BY b.match_id, b.team_id ORDER BY ms.start_date DESC, ms.spell_id DESC
         )AS rn
 
     FROM behind_as_half b JOIN manager_spells ms ON b.team_id = ms.team_id
         AND DATE(b.kickoff_ts) >= ms.start_date
-        AND (ms.end_date IS NULL OR DATE(b.kickoff_ts) <= ms.start_date)
+        AND (ms.end_date IS NULL OR DATE(b.kickoff_ts) <= ms.end_date)
     )
 
 SELECT manager_name,
@@ -161,4 +164,4 @@ GROUP BY manager_name
 ORDER BY earned_points DESC
 LIMIT 1;
 
--- A10
+-- A10 - Trener Zoran Tosic je osvojio najvise bodova u utakmicama u kojima je njegov tim gubio na poluvremenu.
